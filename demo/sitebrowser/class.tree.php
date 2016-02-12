@@ -4,6 +4,7 @@ class tree
 {
 	protected $db = null;
 	protected $options = null;
+	protected $tree_id = null;
 	protected $default = array(
 		'structure_table'	=> 'structure',		// the structure table (containing the id, left, right, level, parent_id and position fields)
 		'data_table'		=> 'structure',		// table for additional fields (apart from structure ones, can be the same as structure_table)
@@ -14,13 +15,15 @@ class tree
 			'right'			=> 'rgt',
 			'level'			=> 'lvl',
 			'parent_id'		=> 'pid',
-			'position'		=> 'pos'
+			'position'		=> 'pos',
+			'tree_id'	    => 'tid'
 		),
 		'data'				=> array()			// array of additional fields from the data table
 	);
 
-	public function __construct(\vakata\database\IDB $db, array $options = array()) {
+	public function __construct(\vakata\database\IDB $db, array $options = array(), $tree_id) {
 		$this->db = $db;
+		$this->tree_id = $tree_id;
 		$this->options = array_merge($this->default, $options);
 	}
 
@@ -34,6 +37,7 @@ class tree
 				".$this->options['data_table']." d
 			WHERE
 				s.".$this->options['structure']['id']." = d.".$this->options['data2structure']." AND
+				s.".$this->options['structure']['tree_id']." = ".(int)$this->tree_id ." AND
 				s.".$this->options['structure']['id']." = ".(int)$id
 		);
 		if(!$node) {
@@ -62,6 +66,7 @@ class tree
 				WHERE
 					s.".$this->options['structure']['id']." = d.".$this->options['data2structure']." AND
 					s.".$this->options['structure']['left']." > ".(int)$node[$this->options['structure']['left']]." AND
+					s.".$this->options['structure']['tree_id']." = ".(int)$this->tree_id ." AND
 					s.".$this->options['structure']['right']." < ".(int)$node[$this->options['structure']['right']]."
 				ORDER BY
 					s.".$this->options['structure']['left']."
@@ -77,11 +82,13 @@ class tree
 					".$this->options['data_table']." d
 				WHERE
 					s.".$this->options['structure']['id']." = d.".$this->options['data2structure']." AND
+					s.".$this->options['structure']['tree_id']." = ".(int)$this->tree_id ." AND
 					s.".$this->options['structure']['parent_id']." = ".(int)$id."
 				ORDER BY
 					s.".$this->options['structure']['position']."
 			";
 		}
+		
 		return $this->db->all($sql);
 	}
 
@@ -98,6 +105,7 @@ class tree
 					".$this->options['data_table']." d
 				WHERE
 					s.".$this->options['structure']['id']." = d.".$this->options['data2structure']." AND
+					s.".$this->options['structure']['tree_id']." = ".(int)$this->tree_id ." AND
 					s.".$this->options['structure']['left']." < ".(int)$node[$this->options['structure']['left']]." AND
 					s.".$this->options['structure']['right']." > ".(int)$node[$this->options['structure']['right']]."
 				ORDER BY
@@ -188,6 +196,9 @@ class tree
 					break;
 				case 'position':
 					$tmp[] = $position;
+					break;
+				case 'tree_id':
+					$tmp[] = $this->tree_id;
 					break;
 				default:
 					$tmp[] = null;

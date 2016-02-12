@@ -3,7 +3,9 @@ require_once(dirname(__FILE__) . '/class.db.php');
 require_once(dirname(__FILE__) . '/class.tree.php');
 
 if(isset($_GET['operation'])) {
-	$fs = new tree(db::get('mysqli://root@127.0.0.1/test'), array('structure_table' => 'tree_struct', 'data_table' => 'tree_data', 'data' => array('nm')));
+	$_GET['tid'] = isset($_GET['tid']) ? $_GET['tid'] : 1;
+	$fs = new tree(
+		db::get('mysqli://root@127.0.0.1/test'), array('structure_table' => 'tree_struct', 'data_table' => 'tree_data', 'data' => array('nm')), $_GET['tid']);
 	try {
 		$rslt = null;
 		switch($_GET['operation']) {
@@ -99,6 +101,20 @@ if(isset($_GET['operation'])) {
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js"></script>
 		<script src="./../../dist/jstree.min.js"></script>
 		<script>
+		var getUrlParameter = function getUrlParameter(sParam) {
+		    var sPageURL = decodeURIComponent(window.location.search.substring(1)),
+		        sURLVariables = sPageURL.split('&'),
+		        sParameterName,
+		        i;
+
+		    for (i = 0; i < sURLVariables.length; i++) {
+		        sParameterName = sURLVariables[i].split('=');
+
+		        if (sParameterName[0] === sParam) {
+		            return sParameterName[1] === undefined ? true : sParameterName[1];
+		        }
+		    }
+		};
 		$(function () {
 			$(window).resize(function () {
 				var h = Math.max($(window).height() - 0, 420);
@@ -109,7 +125,7 @@ if(isset($_GET['operation'])) {
 				.jstree({
 					'core' : {
 						'data' : {
-							'url' : '?operation=get_node',
+							'url' : '?operation=get_node&tid='+getUrlParameter('tid'),
 							'data' : function (node) {
 								return { 'id' : node.id };
 							}
@@ -123,13 +139,13 @@ if(isset($_GET['operation'])) {
 					'plugins' : ['state','dnd','contextmenu','wholerow']
 				})
 				.on('delete_node.jstree', function (e, data) {
-					$.get('?operation=delete_node', { 'id' : data.node.id })
+					$.get('?operation=delete_node&tid='+getUrlParameter('tid'), { 'id' : data.node.id })
 						.fail(function () {
 							data.instance.refresh();
 						});
 				})
 				.on('create_node.jstree', function (e, data) {
-					$.get('?operation=create_node', { 'id' : data.node.parent, 'position' : data.position, 'text' : data.node.text })
+					$.get('?operation=create_node&tid='+getUrlParameter('tid'), { 'id' : data.node.parent, 'position' : data.position, 'text' : data.node.text })
 						.done(function (d) {
 							data.instance.set_id(data.node, d.id);
 						})
@@ -138,32 +154,32 @@ if(isset($_GET['operation'])) {
 						});
 				})
 				.on('rename_node.jstree', function (e, data) {
-					$.get('?operation=rename_node', { 'id' : data.node.id, 'text' : data.text })
+					$.get('?operation=rename_node&tid='+getUrlParameter('tid'), { 'id' : data.node.id, 'text' : data.text })
 						.fail(function () {
 							data.instance.refresh();
 						});
 				})
 				.on('move_node.jstree', function (e, data) {
-					$.get('?operation=move_node', { 'id' : data.node.id, 'parent' : data.parent, 'position' : data.position })
+					$.get('?operation=move_node&tid='+getUrlParameter('tid'), { 'id' : data.node.id, 'parent' : data.parent, 'position' : data.position })
 						.fail(function () {
 							data.instance.refresh();
 						});
 				})
 				.on('copy_node.jstree', function (e, data) {
-					$.get('?operation=copy_node', { 'id' : data.original.id, 'parent' : data.parent, 'position' : data.position })
+					$.get('?operation=copy_node&tid='+getUrlParameter('tid'), { 'id' : data.original.id, 'parent' : data.parent, 'position' : data.position })
 						.always(function () {
 							data.instance.refresh();
 						});
 				})
 				.on('changed.jstree', function (e, data) {
 					if(data && data.selected && data.selected.length) {
-						$.get('?operation=get_content&id=' + data.selected.join(':'), function (d) {
-							$('#data .default').text(d.content).show();
+						$.get('?operation=get_content&tid='+getUrlParameter('tid')+'&id=' + data.selected.join(':'), function (d) {
+							$('#data .default').html(d.content).show();
 						});
 					}
 					else {
 						$('#data .content').hide();
-						$('#data .default').text('Select a file from the tree.').show();
+						$('#data .default').html('Select a file from the tree.').show();
 					}
 				});
 		});
